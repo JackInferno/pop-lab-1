@@ -1,33 +1,38 @@
-﻿class Program
+class Program
 {
+    int numberOfThreads = 2;
+    int step = 2;
+    CalculatorData[] allData;
+
     static void Main(string[] args)
     {
         Program program = new Program();
         program.Start();
     }
 
-    int numberOfThreads = 2;
-    int step = 2; 
-
     void Start()
     {
+        allData = new CalculatorData[numberOfThreads];
+
         for (int i = 0; i < numberOfThreads; i++)
         {
             CalculatorData data = new CalculatorData(i + 1, step);
+            allData[i] = data;
+
             Thread calcThread = new Thread(() => Calculator(data));
             data.Thread = calcThread;
             calcThread.Start();
-
-            int delayInSeconds = (i + 1) * 5;
-            new Thread(() => Stopper(data, delayInSeconds)).Start();
         }
+
+        Thread stopperThread = new Thread(() => stopper(allData));
+        stopperThread.Start();
     }
 
     class CalculatorData
     {
         public int Id { get; }
         public int Step { get; }
-        public bool CanStop { get; set; } = false;
+        public bool CanStop = false;
         public Thread Thread { get; set; }
 
         public CalculatorData(int id, int step)
@@ -40,7 +45,7 @@
     void Calculator(CalculatorData data)
     {
         long sum = 0;
-        int count = 0;
+        long count = 0;
         int current = 0;
 
         while (!data.CanStop)
@@ -53,9 +58,14 @@
         Console.WriteLine($"Потiк #{data.Id}: Сума = {sum}, Кiлькiсть доданкiв = {count}");
     }
 
-    void Stopper(CalculatorData data, int delayInSeconds)
+    void stopper(CalculatorData[] allData)
     {
-        Thread.Sleep(delayInSeconds * 100);
-        data.CanStop = true;
+        for (int i = 0; i < allData.Length; i++)
+        {
+            int delayInSeconds = (i + 1) * 3;
+            Thread.Sleep(delayInSeconds * 1000);
+            allData[i].CanStop = true;
+        }
     }
+}
 }
